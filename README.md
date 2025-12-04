@@ -1,8 +1,8 @@
 # HugoCafeinado
 
-## tema: Um jogo baseado em Hugo e sua chicara de café
+## tema: Um jogo baseado em Hugo e sua chicara de café.
 ## integrantes: João Felipe, Tallys Rafael, Martiniano Soares.
-## Bibliotecas usadas: pygame, sys, random,
+## Bibliotecas usadas: pygame, sys, random.
 
 """
 Jogo do Dinossauro (estilo Chrome Dino) - feito com pygame
