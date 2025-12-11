@@ -2,6 +2,9 @@ import pygame
 import random
 import csv
 import sys
+import os 
+import math
+import pygame as pg
 
 largura, altura = 800, 400
 gravidade = 0.8
@@ -38,4 +41,5 @@ while True:
     todas_as_sprites.draw(tela)
 
     pygame.display.flip()
+
 
