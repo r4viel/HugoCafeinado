@@ -2,7 +2,7 @@
 
 ## tema: Um jogo baseado em Hugo e sua chicara de café.
 ## integrantes: João Felipe, Tallys Rafael, Martiniano Soares.
-## Bibliotecas usadas: pygame, sys, random.
+## Bibliotecas usadas: pygame, sys, random, math, os.
 
 """
 Jogo do Dinossauro (estilo Chrome Dino) - feito com pygame
