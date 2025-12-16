@@ -13,7 +13,6 @@ OBSTACLE_SPAWN_MAX = 1600
 SPEED_START = 6
 SPEED_ACCEL = 0.0012
 
-WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (120, 120, 120)
 SKY = (235, 245, 255)
@@ -34,8 +33,6 @@ class Dino:
         self.vel_y = 0
         self.on_ground = True
         self.alive = True
-        self.step = 0
-        self.step_timer = 0
 
     def rect(self):
         return pygame.Rect(int(self.x), int(self.y - self.h), self.w, self.h)
@@ -53,74 +50,32 @@ class Dino:
             self.vel_y = 0
             self.on_ground = True
 
-        if not self.on_ground:
-            self.step = 2
-        else:
-            self.step_timer += 1
-            if self.step_timer > 6:
-                self.step_timer = 0
-                self.step = (self.step + 1) % 2
-
     def draw(self, surf):
-        r = self.rect()
-        pygame.draw.rect(surf, BLACK, r)
-        eye = (r.x + int(self.w * 0.7), r.y + 12)
-        pygame.draw.circle(surf, WHITE, eye, 4)
-        pygame.draw.circle(surf, BLACK, eye, 2)
-        if self.step == 0:
-            pygame.draw.line(surf, BLACK, (r.x + 10, r.y + self.h), (r.x + 10, r.y + self.h + 12), 4)
-            pygame.draw.line(surf, BLACK, (r.x + 30, r.y + self.h), (r.x + 30, r.y + self.h + 6), 4)
-        elif self.step == 1:
-            pygame.draw.line(surf, BLACK, (r.x + 10, r.y + self.h), (r.x + 10, r.y + self.h + 6), 4)
-            pygame.draw.line(surf, BLACK, (r.x + 30, r.y + self.h), (r.x + 30, r.y + self.h + 12), 4)
-        else:
-            pygame.draw.line(surf, BLACK, (r.x + 20, r.y + self.h), (r.x + 20, r.y + self.h + 8), 4)
+        pygame.draw.rect(surf, BLACK, self.rect())
 
 class Obstacle:
-    def __init__(self, x, kind='cactus'):
+    def __init__(self, x):
         self.x = x
-        self.kind = kind
-        if kind == 'cactus':
-            self.w = random.choice([18, 24, 30])
-            self.h = random.choice([36, 48, 56])
-        else:
-            self.w = 34
-            self.h = 24
-            self.y_offset = random.choice([60, 80])
+        self.w = random.choice([18, 24, 30])
+        self.h = random.choice([36, 48, 56])
         self.passed = False
 
     def rect(self):
-        if self.kind == 'cactus':
-            return pygame.Rect(int(self.x), HEIGHT - GROUND_HEIGHT - self.h, self.w, self.h)
-        else:
-            return pygame.Rect(int(self.x), HEIGHT - GROUND_HEIGHT - self.y_offset, self.w, self.h)
+        return pygame.Rect(int(self.x), HEIGHT - GROUND_HEIGHT - self.h, self.w, self.h)
 
     def update(self, speed):
         self.x -= speed
 
     def draw(self, surf):
-        r = self.rect()
-        if self.kind == 'cactus':
-            pygame.draw.rect(surf, BLACK, r)
-        else:
-            pygame.draw.ellipse(surf, BLACK, r)
-            wing = (r.centerx - 6, r.centery - 6)
-            pygame.draw.polygon(surf, BLACK, [(wing[0], wing[1]), (wing[0]-10, wing[1]-6), (wing[0]-6, wing[1]+2)])
+        pygame.draw.rect(surf, BLACK, self.rect())
 
-
-def draw_ground(surf, offset):
-    pygame.draw.rect(surf, BLACK, (0, HEIGHT - GROUND_HEIGHT, WIDTH, GROUND_HEIGHT))
-
+def draw_ground(offset):
+    pygame.draw.rect(screen, BLACK, (0, HEIGHT - GROUND_HEIGHT, WIDTH, GROUND_HEIGHT))
     step = 40
     for i in range(-step, WIDTH + step, step):
         x = i + int(offset % step)
-        pygame.draw.line(surf, GRAY, (x, HEIGHT - GROUND_HEIGHT + 10), (x + 20, HEIGHT - GROUND_HEIGHT + 10), 2)
-
-
-def draw_text(surf, text, size=28, x=10, y=10):
-    t = font.render(text, True, BLACK)
-    surf.blit(t, (x, y))
-
+        pygame.draw.line(screen, GRAY, (x, HEIGHT - GROUND_HEIGHT + 10),
+                         (x + 20, HEIGHT - GROUND_HEIGHT + 10), 2)
 
 def game_loop():
     dino = Dino(80, HEIGHT - GROUND_HEIGHT)
@@ -129,160 +84,137 @@ def game_loop():
     speed = SPEED_START
     ground_offset = 0
     score = 0
-    wrote_score = False
-    running = True
-    game_over = False
-    frames = 0
 
-    while running:
+    game_over = False
+    entering_name = False
+    saved = False
+    player_name = ""
+
+    while True:
         dt = clock.tick(FPS)
-        frames += 1
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
-                if event.key in (pygame.K_SPACE, pygame.K_UP):
-                    if not game_over:
-                        dino.jump()
-                    else:
-                        pass
-                if event.key == pygame.K_r and game_over:
-                    return True
+                pygame.quit(); sys.exit()
 
-        keys = pygame.key.get_pressed()
+            if event.type == pygame.KEYDOWN:
+                if not game_over:
+                    if event.key in (pygame.K_SPACE, pygame.K_UP):
+                        dino.jump()
+                else:
+                    if entering_name:
+                        if event.key == pygame.K_RETURN and player_name:
+                            with open("dados.csv", "a", newline="", encoding="utf-8") as f:
+                                csv.writer(f).writerow([player_name, score])
+                            entering_name = False
+                            saved = True
+                        elif event.key == pygame.K_BACKSPACE:
+                            player_name = player_name[:-1]
+                        else:
+                            if len(player_name) < 10 and event.unicode.isprintable():
+                                player_name += event.unicode
+                    else:
+                        if event.key == pygame.K_r:
+                            return True
+                        if event.key == pygame.K_ESCAPE:
+                            return False
 
         if not game_over:
             speed += SPEED_ACCEL * dt
             ground_offset += speed
-
             dino.update()
 
             distance_to_next -= speed
             if distance_to_next <= 0:
-                kind = 'cactus' if random.random() < 0.85 else 'bird'
-                obstacles.append(Obstacle(WIDTH + 20, kind=kind))
-                distance_to_next = random.randint(int(OBSTACLE_SPAWN_MIN - score*0.5), int(OBSTACLE_SPAWN_MAX - score*0.06))
+                obstacles.append(Obstacle(WIDTH + 20))
+                distance_to_next = random.randint(
+                    int(OBSTACLE_SPAWN_MIN - score * 0.5),
+                    int(OBSTACLE_SPAWN_MAX - score * 0.06)
+                )
                 distance_to_next = max(450, distance_to_next)
 
-            for ob in list(obstacles):
+            for ob in obstacles[:]:
                 ob.update(speed)
                 if ob.x + ob.w < -50:
                     obstacles.remove(ob)
-                else:
-                    if dino.rect().colliderect(ob.rect()):
-                        dino.alive = False
-                        game_over = True
+                elif dino.rect().colliderect(ob.rect()):
+                    game_over = True
+                    entering_name = True
 
                 if not ob.passed and ob.x + ob.w < dino.x:
                     ob.passed = True
                     score += 1
 
         screen.fill(SKY)
-
-        if frames % 120 == 0:
-            pass
         dino.draw(screen)
         for ob in obstacles:
             ob.draw(screen)
+        draw_ground(ground_offset)
 
-        draw_ground(screen, ground_offset)
-
-        draw_text(screen, f"Pontuação: {score}", x=WIDTH - 170, y=10)
+        screen.blit(font.render(f"Pontuação: {score}", True, BLACK), (WIDTH - 170, 10))
 
         if game_over:
-            if not wrote_score:
-                try:
-                    with open('dados.csv', 'a', newline='') as f:
-                        writer = csv.writer(f)
-                        writer.writerow([score])
-                except Exception as e:
-                    print('Erro ao salvar pontuação:', e)
-                wrote_score = True
-            txt = big_font.render("GAME OVER", True, BLACK)
-            screen.blit(txt, (WIDTH//2 - txt.get_width()//2, HEIGHT//2 - 30))
-            sub = font.render("Pressione R para reiniciar ou Esc para sair", True, BLACK)
-            screen.blit(sub, (WIDTH//2 - sub.get_width()//2, HEIGHT//2 + 10))
+            screen.blit(big_font.render("GAME OVER", True, BLACK),
+                        (WIDTH//2 - 120, HEIGHT//2 - 80))
+
+            if entering_name:
+                screen.blit(font.render("Digite seu nome:", True, BLACK),
+                            (WIDTH//2 - 110, HEIGHT//2 - 30))
+                pygame.draw.rect(screen, BLACK,
+                                 (WIDTH//2 - 140, HEIGHT//2, 280, 32), 2)
+                screen.blit(font.render(player_name, True, BLACK),
+                            (WIDTH//2 - 130, HEIGHT//2 + 6))
+            else:
+                screen.blit(font.render("R - Reiniciar | ESC - Sair", True, BLACK),
+                            (WIDTH//2 - 130, HEIGHT//2 + 10))
 
         pygame.display.flip()
-
-    return False
-
-
-def show_menu():
-    while True:
-        screen.fill((235,245,255))
-        title = big_font.render("Jogo do Dinossauro", True, BLACK)
-        screen.blit(title, (WIDTH//2 - title.get_width()//2, 80))
-
-        play = font.render("1 - Jogar", True, BLACK)
-        screen.blit(play, (WIDTH//2 - play.get_width()//2, 170))
-
-        score_btn = font.render("2 - Placar (Top 3)", True, BLACK)
-        screen.blit(score_btn, (WIDTH//2 - score_btn.get_width()//2, 210))
-
-        quit_btn = font.render("Esc - Sair", True, BLACK)
-        screen.blit(quit_btn, (WIDTH//2 - quit_btn.get_width()//2, 250))
-
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    return "play"
-                if event.key == pygame.K_2:
-                    return "scores"
-                if event.key == pygame.K_ESCAPE:
-                    pygame.quit(); sys.exit()
 
 def show_scores():
-    top = []
     try:
-        with open('dados.csv', 'r') as f:
-            import csv
-            r = csv.reader(f)
-            scores = sorted([int(row[0]) for row in r], reverse=True)
-            top = scores[:3]
+        with open("dados.csv", "r", encoding="utf-8") as f:
+            scores = sorted([(r[0], int(r[1])) for r in csv.reader(f)],
+                            key=lambda x: x[1], reverse=True)[:3]
     except:
-        top = []
+        scores = []
 
     while True:
-        screen.fill((235,245,255))
-        title = big_font.render("Top 3 Pontuações", True, BLACK)
-        screen.blit(title, (WIDTH//2 - title.get_width()//2, 80))
+        screen.fill(SKY)
+        screen.blit(big_font.render("Top 3 Pontuações", True, BLACK), (240, 80))
 
-        if top:
-            for i, s in enumerate(top, start=1):
-                t = font.render(f"{i}º - {s}", True, BLACK)
-                screen.blit(t, (WIDTH//2 - t.get_width()//2, 160 + 30*i))
-        else:
-            none = font.render("Nenhum dado disponível", True, BLACK)
-            screen.blit(none, (WIDTH//2 - none.get_width()//2, 200))
+        for i, (n, s) in enumerate(scores, 1):
+            screen.blit(font.render(f"{i}º - {n}: {s}", True, BLACK),
+                        (300, 140 + i * 30))
 
-        back = font.render("Pressione B para voltar", True, BLACK)
-        screen.blit(back, (WIDTH//2 - back.get_width()//2, 300))
-
+        screen.blit(font.render("B - Voltar", True, BLACK), (350, 300))
         pygame.display.flip()
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit(); sys.exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
                 return
+            if event.type == pygame.QUIT:
+                pygame.quit(); sys.exit()
 
 def main():
     while True:
-        choice = show_menu()
-        if choice == "play":
-            restart = True
-            while restart:
-                restart = game_loop()
-        elif choice == "scores":
-            show_scores()
+        screen.fill(SKY)
+        screen.blit(big_font.render("Jogo do Dinossauro", True, BLACK), (250, 80))
+        screen.blit(font.render("1 - Jogar", True, BLACK), (360, 170))
+        screen.blit(font.render("2 - Placar", True, BLACK), (350, 210))
+        screen.blit(font.render("ESC - Sair", True, BLACK), (345, 250))
+        pygame.display.flip()
 
-if __name__ == '__main__':
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    while game_loop():
+                        pass
+                if event.key == pygame.K_2:
+                    show_scores()
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit(); sys.exit()
+            if event.type == pygame.QUIT:
+                pygame.quit(); sys.exit()
+
+if __name__ == "__main__":
     main()
