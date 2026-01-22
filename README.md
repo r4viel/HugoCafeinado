@@ -1,11 +1,11 @@
-# HugoCafeinado
+# Hugo Adventure
 
 ## integrantes: João Felipe, Tallys Rafael, Martiniano Soares.
-## Bibliotecas usadas: pygame, sys, random, math, os.
+## Bibliotecas usadas: pygame, sys, random, os.
 
 """
-Jogo do Dinossauro (estilo Chrome Dino) - feito com pygame
-Arquivo: Jogo do Dinossauro - dinogame.py
+Hugo Adventure (estilo Chrome Dino) - feito com pygame
+Arquivo: Jogo - HugoAdventure.py
 
 Instruções:
 - Requer Python 3.8+ e pygame
@@ -17,5 +17,5 @@ Controles:
 - R: reiniciar após game over
 - Esc ou fechar a janela: sair
 
-Este jogo usa formas simples (retângulos/círculos) para o dinossauro e obstáculos — não precisa de internet.
+Este jogo usa formas simples (Hugo/mouses) para o dinossauro e obstáculos — não precisa de internet.
 """
